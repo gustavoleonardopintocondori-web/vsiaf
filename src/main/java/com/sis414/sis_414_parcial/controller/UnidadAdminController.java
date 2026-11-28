@@ -39,13 +39,13 @@ public class UnidadAdminController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "UnidadAdmin - Nuevo")
     public UnidadAdminDto create(@RequestBody UnidadAdminRequest dto) {
-        return service.create(dto.toDto());
+        return service.create(dto.toDto(), dto.entidadCodigo(), dto.entidadNombre());
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "UnidadAdmin - Modificar")
     public UnidadAdminDto update(@PathVariable Long id, @RequestBody UnidadAdminRequest dto) {
-        return service.update(id, dto.toDto());
+        return service.update(id, dto.toDto(), dto.entidadCodigo(), dto.entidadNombre());
     }
 
     @DeleteMapping("/{id}")
@@ -67,7 +67,9 @@ public class UnidadAdminController {
             @Schema(example = "Administracion", maxLength = 120) String descrip,
             @Schema(example = "Potosi", maxLength = 20) String ciudad,
             @Schema(example = "1") Integer estadoUni,
-            @Schema(example = "1", description = "Identificador de una entidad existente; obligatorio al crear, opcional al modificar") Long entidadId
+            @Schema(hidden = true) Long entidadId,
+            @Schema(example = "0001", maxLength = 4, description = "Codigo de la entidad; al modificar puede omitirse para conservar la entidad actual") String entidadCodigo,
+            @Schema(example = "Entidad de prueba", maxLength = 110, description = "Nombre real de la entidad si su codigo aun no existe; se registrara junto con la unidad") String entidadNombre
     ) {
         UnidadAdminDto toDto() {
             return new UnidadAdminDto(null, unidad, descrip, ciudad, estadoUni, entidadId);
