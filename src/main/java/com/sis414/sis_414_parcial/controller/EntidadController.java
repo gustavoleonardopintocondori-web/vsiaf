@@ -3,7 +3,7 @@ package com.sis414.sis_414_parcial.controller;
 import com.sis414.sis_414_parcial.dto.EntidadDto;
 import com.sis414.sis_414_parcial.service.EntidadService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/entidades")
-@Tag(name = "Administrar Unidad")
+@Hidden // Keep auxiliary API available without repeating CRUD in Swagger.
 public class EntidadController {
 
     private final EntidadService service;
