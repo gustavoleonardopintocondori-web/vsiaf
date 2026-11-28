@@ -6,6 +6,7 @@ import com.sis414.sis_414_parcial.entity.Entidad;
 import com.sis414.sis_414_parcial.repository.EntidadRepository;
 import com.sis414.sis_414_parcial.repository.UnidadAdminRepository;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.FlushModeType;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Example;
@@ -72,7 +73,14 @@ public class UnidadAdminService {
 
     @Transactional
     public void delete(Long id) {
-        repository.delete(getOrThrow(id));
+        lockUnitWrites();
+        try {
+            repository.delete(getOrThrow(id));
+            repository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No se puede eliminar la unidad porque tiene registros asociados", ex);
+        }
     }
 
     public UnidadAdmin getOrThrow(Long id) {
@@ -104,6 +112,7 @@ public class UnidadAdminService {
                 .setParameter("entidadId", unit.getEntidad().getId())
                 .setParameter("codigo", unit.getUnidad())
                 .setParameter("currentId", unit.getId() == null ? -1L : unit.getId())
+                .setFlushMode(FlushModeType.COMMIT)
                 .getSingleResult();
         if (matches > 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
