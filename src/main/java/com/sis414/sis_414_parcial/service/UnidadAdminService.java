@@ -5,6 +5,8 @@ import com.sis414.sis_414_parcial.entity.UnidadAdmin;
 import com.sis414.sis_414_parcial.entity.Entidad;
 import com.sis414.sis_414_parcial.repository.EntidadRepository;
 import com.sis414.sis_414_parcial.repository.UnidadAdminRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +20,9 @@ import java.time.LocalDate;
 
 @Service
 public class UnidadAdminService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final UnidadAdminRepository repository;
     private final EntidadRepository entidadRepository;
@@ -44,8 +49,10 @@ public class UnidadAdminService {
 
     @Transactional
     public UnidadAdminDto create(UnidadAdminDto dto, String entidadCodigo, String entidadNombre) {
+        lockUnitWrites();
         UnidadAdmin entity = new UnidadAdmin();
         apply(dto, entity, entidadCodigo, entidadNombre);
+        validateUniqueUnit(entity);
         return toDto(saveValidated(entity));
     }
 
@@ -56,8 +63,10 @@ public class UnidadAdminService {
 
     @Transactional
     public UnidadAdminDto update(Long id, UnidadAdminDto dto, String entidadCodigo, String entidadNombre) {
+        lockUnitWrites();
         UnidadAdmin entity = getOrThrow(id);
         apply(dto, entity, entidadCodigo, entidadNombre);
+        validateUniqueUnit(entity);
         return toDto(saveValidated(entity));
     }
 
@@ -80,6 +89,26 @@ public class UnidadAdminService {
                 e.getEstadoUni(),
                 e.getEntidad() == null ? null : e.getEntidad().getId()
         );
+    }
+
+    // PostgreSQL transaction-level lock serializes unit writes, including creation of a new parent entity.
+    private void lockUnitWrites() {
+        entityManager.createNativeQuery("SELECT 1 FROM pg_advisory_xact_lock(41420261128)")
+                .getSingleResult();
+    }
+
+    private void validateUniqueUnit(UnidadAdmin unit) {
+        Long matches = entityManager.createQuery(
+                        "select count(u) from UnidadAdmin u where u.entidad.id = :entidadId "
+                        + "and lower(trim(u.unidad)) = lower(:codigo) and u.id <> :currentId", Long.class)
+                .setParameter("entidadId", unit.getEntidad().getId())
+                .setParameter("codigo", unit.getUnidad())
+                .setParameter("currentId", unit.getId() == null ? -1L : unit.getId())
+                .getSingleResult();
+        if (matches > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "La unidad " + unit.getUnidad() + " ya existe en esta entidad. No se permiten duplicados.");
+        }
     }
 
     private UnidadAdmin saveValidated(UnidadAdmin entity) {
