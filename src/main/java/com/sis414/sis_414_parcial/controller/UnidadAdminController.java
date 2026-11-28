@@ -3,8 +3,11 @@ package com.sis414.sis_414_parcial.controller;
 import com.sis414.sis_414_parcial.dto.UnidadAdminDto;
 import com.sis414.sis_414_parcial.service.UnidadAdminService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,13 +55,19 @@ public class UnidadAdminController {
         service.delete(id);
     }
 
+    @ExceptionHandler(ResponseStatusException.class)
+    public ProblemDetail handleValidationError(ResponseStatusException ex) {
+        return ProblemDetail.forStatusAndDetail(ex.getStatusCode(),
+                ex.getReason() == null ? "No se pudo procesar la unidad" : ex.getReason());
+    }
+
     // The database assigns the ID; clients do not provide it in the request body.
     public record UnidadAdminRequest(
-            String unidad,
-            String descrip,
-            String ciudad,
-            Integer estadoUni,
-            Long entidadId
+            @Schema(example = "001", minLength = 1, maxLength = 5, requiredMode = Schema.RequiredMode.REQUIRED) String unidad,
+            @Schema(example = "Administracion", maxLength = 120) String descrip,
+            @Schema(example = "Potosi", maxLength = 20) String ciudad,
+            @Schema(example = "1") Integer estadoUni,
+            @Schema(example = "1", description = "Identificador de una entidad existente; obligatorio al crear, opcional al modificar") Long entidadId
     ) {
         UnidadAdminDto toDto() {
             return new UnidadAdminDto(null, unidad, descrip, ciudad, estadoUni, entidadId);
