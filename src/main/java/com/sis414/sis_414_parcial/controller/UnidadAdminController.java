@@ -35,14 +35,14 @@ public class UnidadAdminController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "UnidadAdmin - Nuevo")
-    public UnidadAdminDto create(@RequestBody UnidadAdminDto dto) {
-        return service.create(dto);
+    public UnidadAdminDto create(@RequestBody UnidadAdminRequest dto) {
+        return service.create(dto.toDto());
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "UnidadAdmin - Modificar")
-    public UnidadAdminDto update(@PathVariable Long id, @RequestBody UnidadAdminDto dto) {
-        return service.update(id, dto);
+    public UnidadAdminDto update(@PathVariable Long id, @RequestBody UnidadAdminRequest dto) {
+        return service.update(id, dto.toDto());
     }
 
     @DeleteMapping("/{id}")
@@ -50,5 +50,18 @@ public class UnidadAdminController {
     @Operation(summary = "UnidadAdmin - Eliminar")
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    // The database assigns the ID; clients do not provide it in the request body.
+    public record UnidadAdminRequest(
+            String unidad,
+            String descrip,
+            String ciudad,
+            Integer estadoUni,
+            Long entidadId
+    ) {
+        UnidadAdminDto toDto() {
+            return new UnidadAdminDto(null, unidad, descrip, ciudad, estadoUni, entidadId);
+        }
     }
 }
